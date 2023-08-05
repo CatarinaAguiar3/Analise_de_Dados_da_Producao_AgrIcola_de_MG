@@ -1,0 +1,317 @@
+---
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Análise de Dados da Produção Agrícola de Minas Gerais
+
+```{r, include=FALSE}
+#ctrl + shfit + r
+#rm = serve para limpar o diretorio
+rm(list=ls(all=TRUE))
+setwd('C:/R')
+dir()
+```
+
+```{r  , message = FALSE}
+#install.packages('tidyverse')
+library('tidyverse')
+
+#install.packages('ggplot2')
+library('ggplot2')
+
+```
+
+## Base de dados
+
+```{r}
+#Dados sobre produção agricola (IBGE)
+dados <- read.csv("base_exercicio3.csv", sep=";")
+view(dados)
+head(dados)
+
+```
+
+## Descobrindo um pouco mais sobre os dados
+
+### Nome das colunas
+
+```{r}
+#entao (pip) do r : ctrl+shift+m
+#Nome das colunas
+colnames(dados)
+
+```
+
+Percebemos que os nomes tem letras maiúsculas e acentos. Por isso, vamos
+trocá-los.
+
+```{r}
+base <- dados %>% rename(
+  microrregiao= "Microrregião.Geográfica",
+  produto="Produto.das.lavouras.temporárias",
+  variavel="Variável",
+  cod="Cód." ,
+  ano="Ano",
+  x="X"
+  ) 
+```
+
+### Descobrindo o tipo de dado de cada coluna
+
+```{r}
+class(base$ano)
+class(base$cod)
+class(base$microrregiao)
+class(base$produto)
+class(base$variavel)
+class(base$x)
+```
+
+Percebemos que a coluna "X" tem dados do tipo "character". Porém, esta
+coluna tem números. Logo, precisamos modificar o tipo de dado. <br>
+
+```{r}
+base <- base %>% mutate(
+    x=as.numeric(x))
+
+```
+
+```{r}
+class(base$x)
+```
+
+Além disso, vamos trocar as NA's por 0.E em seguida, vamos salvar todas
+as modificações como uma nova base de dados em csv
+
+```{r}
+base <- base %>% mutate_all(replace_na,0) %>% write.csv2(
+  file='base.csv'
+) 
+ 
+#write.csv2 : estamos salvando esta tabela num csv
+ 
+```
+
+Vamos checar se foi gerado o arquivo csv
+
+```{r}
+dir()
+```
+
+Importar a nova base de dados
+
+```{r}
+base <- read.csv2('base.csv')
+
+#Verificar os nomes das colunas da base de dados
+colnames(base)
+
+#Visualização dos dados
+view(base)
+```
+
+## Coluna "Variável"
+
+Dentro desta coluna existem três categorias:"Área colhida (Hectares)",
+"Quantidade produzida (Toneladas)","Valor da produção (Mil Reais)". <br>
+O objetivo agora será separar cada categoria numa tabela diferente.
+
+### Área colhida: seleção da variável "Área colhida(hectares)" e criação de uma nova tabela
+
+```{r}
+area_colhida <- base %>% filter(variavel == 'Área colhida (Hectares)')
+
+view(area_colhida)
+
+head(area_colhida, n=10)
+```
+
+### Quantidade produzida: seleção da variável "Quantidade produzida (Toneladas)" e criação de uma nova tabela
+
+```{r}
+quant_produzida <- base %>% filter(variavel== "Quantidade produzida (Toneladas)")
+
+view(quant_produzida)
+
+head(quant_produzida , n=10)
+```
+
+### Valor da produção: seleção da variável "Valor da produção (Mil Reais)" e criação de uma nova tabela
+
+```{r}
+valor_producao <- base %>% filter (variavel == "Valor da produção (Mil Reais)")
+
+view(valor_producao)
+
+head(valor_producao , n=10)
+```
+
+## Questionamentos:
+
+### Ranking por microrregião
+
+### 1. Quais produtos tiveram as maiores quantidades produzidas de alimento por microrregião?
+
+Para responder esta pergunta, será criado um ranking da quantidade
+produzida (total) por microrregião.
+
+```{r}
+#Ranking por microrregião de todas as produções
+
+# group_by é usado para agrupar os dados pela variável "microrregiao".  Isso significa que os dados serão divididos em grupos com base nos diferentes valores encontrados na coluna "microrregiao".
+
+# summarise é usado para resumir os dados agrupados. Ele calculará a soma dos valores da variável "x" para cada grupo de microrregião. O resultado é armazenado em uma nova variável chamada "soma".
+
+#Arrange é usado para ordenar os dados , neste caso em ordem decrescente (desc)
+
+ranking_microrregiao <- quant_produzida %>% group_by(
+  microrregiao) %>% summarise(soma=sum(x)) %>% arrange((desc(soma))) 
+
+view(ranking_microrregiao)
+head(ranking_microrregiao)
+```
+Uberaba,Frutal e Uberlandia são as três microrregiões que mais produzem
+alimentos em MG.<br> <br> 
+
+
+
+### 1.1 Qual produto é mais produzido em Uberaba?
+```{r}
+Uberaba_producao <- quant_produzida %>% filter( microrregiao == "Uberaba (MG)") %>% group_by(produto) %>% summarise(soma=sum(x)) %>% arrange(desc(soma))
+
+#Visualizar os dados
+view(Uberaba_producao)
+
+#Visualizar os primeiros valores
+head(Uberaba_producao, n=4)
+
+```
+As quatro maiores produções de Uberaba são Cana-de-açucar,Milho, Soja e
+Sorgo. <br> <br> 
+
+
+
+### 1.2 Qual produto é mais produzido em Frutal?
+```{r}
+Frutal_producao <- quant_produzida %>%  filter(microrregiao == "Frutal (MG)") %>% group_by(produto) %>% summarise(soma=sum(x)) %>% arrange(desc(soma))
+
+view(Frutal_producao)
+
+head(Frutal_producao, n=4)
+```
+
+As quatro maiores produções de Uberaba são Cana-de-açucar, Miho, Soja e
+Batata-Inglesa.<br> <br> 
+
+
+### 1.3 Qual produto é mais produzido em Uberlândia?
+```{r}
+Uberlandia_producao<- quant_produzida %>%  filter(microrregiao == "Uberlândia (MG)") %>% group_by(produto) %>% summarise(soma=sum(x)) %>% arrange(desc(soma))
+
+view(Uberlandia_producao)
+
+head(Uberlandia_producao, n=5)
+```
+As quatro maiores produções de Uberlândia são Cana-de-açucar, Soja,
+Milho e Sorgo. <br> <br> <br>
+
+
+### 2.Qual o percentual de produção total que cada microrregião representa em relação a MG?
+```{r}
+ranking_microrregiao <- quant_produzida %>% group_by(microrregiao) %>% summarise(soma=sum(x)) %>% arrange(desc(soma)) %>% mutate(
+  porcentagem =(soma/sum(soma))*100)
+
+view(ranking_microrregiao)
+head(ranking_microrregiao)
+```
+
+```{r}
+#Arredondar as casas decimais da coluna "percentagem"
+ranking_microrregiao <- ranking_microrregiao %>% mutate(porcentagem= round(porcentagem,2))
+view(ranking_microrregiao)
+head(ranking_microrregiao)
+```
+
+Uberaba, Frutal e Uberlândia representam 20.93% , 19.78% e 8.49% ,
+respectivamente, do total de MG. <br> <br> <br>
+
+### 3.Quanto as 6 maiores microrregiões produtoras de alimento representam em relação a MG ?
+
+```{r}
+ranking_6 <-ranking_microrregiao %>%  filter(microrregiao %in% c("Uberaba (MG)","Frutal (MG)", "Uberlândia (MG)","Araxá (MG)", "Paracatu (MG)", "Ituiutaba (MG)")) %>% summarise(
+    soma_porcent=sum(porcentagem))
+
+view(ranking_6)
+
+#Também é possível usar o seguinte código:
+ranking_6a <- ranking_microrregiao %>% filter( 
+  porcentagem >= 6)%>% summarise(
+    soma_porcent=sum(porcentagem))
+
+ranking_6a
+
+```
+
+As 6 maiores microrregiões produtoras de alimentos representam 71.4% do
+total de MG.
+
+### Ranking por produto
+
+### 4. Quais foram os produtos mais produzidos?
+
+```{r}
+#Criando um ranking de produtos e salvando em csv
+quant_produzida %>% group_by(produto) %>% summarise(soma=sum(x)) %>% arrange(desc(soma)) %>% mutate(porcentagem=(soma/sum(soma)*100)) %>% mutate(porcentagem= round(porcentagem ,2)) %>% write.csv2('ranking_produto.csv')
+
+ranking_produtos <- read.csv2('ranking_produto.csv')
+view(ranking_produtos)
+#Percebemos que há uma coluna ""x" servindo de ID. Vamos retirá-la com select (- )
+ranking_produtos <- ranking_produtos %>% select(-X)
+```
+
+Cana de açúcar representa 82.11% da produção da amostra, seguido de
+Milho com 8.07% e Soja com 4.90%
+
+### 5.Qual região mais produziu Cana de açúcar em MG , de acordo com a amostra ?
+
+```{r}
+Cana_de_acucar_ranking <- quant_produzida %>% filter( 
+produto == 'Cana-de-açúcar') %>% group_by(microrregiao) %>% summarise('produção total'= sum(x)) %>% arrange(desc(`produção total`)) %>% mutate(porcentagem=(`produção total`/sum(`produção total`))*100) %>% mutate(porcentagem=round(porcentagem,2))
+
+view(Cana_de_acucar_ranking)
+head(Cana_de_acucar_ranking)
+```
+
+As três maiores produtoras de Cana-de-açúcar de MG são: Uberaba (23.84
+%), Frutal(23.71 %) e Uberlândia (8.44 %).
+
+## Construção de gráficos
+
+### Gráfico da Produção de Cana de açúcar de Uberaba
+
+```{r, message=FALSE}
+#tabela
+tabela_cana <- quant_produzida %>% filter(
+  produto == 'Cana-de-açúcar' & microrregiao =='Uberaba (MG)') %>% group_by(produto,microrregiao, ano) %>% summarise(x= sum(x)) %>% arrange(desc(x)) %>% mutate(porcentagem=(x/sum(x))*100) %>%  mutate(porcentagem=round(porcentagem,2))
+
+view(tabela_cana)
+
+
+grafico_cana2 <- tabela_cana %>%
+  ggplot(mapping = aes(x = ano, y = porcentagem)) +
+  geom_point(color = 'blue', size = 3, alpha = 0.5) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'red') +  # Adiciona linha de regressão
+  scale_x_continuous(breaks = seq(min(tabela_cana$ano), max(tabela_cana$ano), by = 1)) +  # Define intervalo dos valores no eixo x
+  labs(title = 'Porcentagem de Cana-de-açúcar ao longo dos anos', x = 'Ano', y = 'Porcentagem') +  # Adiciona título e rótulos dos eixos
+  theme_minimal()  # Aplica um tema minimalista ao gráfico
+
+print(grafico_cana2)
+
+```
